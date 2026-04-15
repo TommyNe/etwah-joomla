@@ -1,0 +1,42 @@
+name: Deploy Joomla
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: SSH key einrichten
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Docker Context anlegen
+        run: |
+          docker context create deploy-context \
+            --docker "host=ssh://${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" || true
+
+      - name: .env auf Runner schreiben
+        run: |
+          cat > .env <<'EOF'
+          DOMAIN=${{ secrets.DOMAIN }}
+          DB_NAME=${{ secrets.DB_NAME }}
+          DB_USER=${{ secrets.DB_USER }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}
+          TRAEFIK_CERTRESOLVER=${{ secrets.TRAEFIK_CERTRESOLVER }}
+          EOF
+
+      - name: Deploy
+        run: |
+          docker --context deploy-context compose pull
+          docker --context deploy-context compose up -d
