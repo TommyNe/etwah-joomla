@@ -41,6 +41,7 @@ services:
 
       - traefik.http.services.joomla.loadbalancer.server.port=80
 
+
 volumes:
   joomla_db_data:
   joomla_data:
