@@ -1,0 +1,52 @@
+services:
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - joomla_db_data:/var/lib/mysql
+    networks:
+      - internal
+
+  joomla:
+    image: joomla:6.0.4-apache
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      JOOMLA_DB_HOST: db:3306
+      JOOMLA_DB_USER: ${DB_USER}
+      JOOMLA_DB_PASSWORD: ${DB_PASSWORD}
+      JOOMLA_DB_NAME: ${DB_NAME}
+    volumes:
+      - joomla_data:/var/www/html
+    networks:
+      - internal
+      - web
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=web
+
+      - traefik.http.routers.joomla.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.joomla.entrypoints=websecure
+      - traefik.http.routers.joomla.tls=true
+      - traefik.http.routers.joomla.tls.certresolver=${TRAEFIK_CERTRESOLVER}
+
+      - traefik.http.services.joomla.loadbalancer.server.port=80
+
+volumes:
+  joomla_db_data:
+  joomla_data:
+
+networks:
+  internal:
+    internal: true
+  web:
+    external: true
