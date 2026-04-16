@@ -34,7 +34,7 @@ services:
       - traefik.enable=true
       - traefik.docker.network=web
 
-      - traefik.http.routers.joomla.rule=Host(`${DOdMAIN}`)
+      - traefik.http.routers.joomla.rule=Host(`${DOMAIN}`)
       - traefik.http.routers.joomla.entrypoints=websecure
       - traefik.http.routers.joomla.tls=true
       - traefik.http.routers.joomla.tls.certresolver=le
